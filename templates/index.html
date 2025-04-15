@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marble Game - Based on Ludo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(11, 40px);
+            grid-template-rows: repeat(11, 40px);
+            gap: 2px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #fff;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        
+        /* Base areas */
+        .red-base {
+            background-color: #ffdddd;
+        }
+        
+        .green-base {
+            background-color: #ddffdd;
+        }
+        
+        .yellow-base {
+            background-color: #ffffdd;
+        }
+        
+        .blue-base {
+            background-color: #ddddff;
+        }
+        
+        /* Path cells */
+        .path {
+            background-color: #eee;
+        }
+        
+        /* Home cells */
+        .red-home {
+            background-color: #ff9999;
+        }
+        
+        .green-home {
+            background-color: #99ff99;
+        }
+        
+        .yellow-home {
+            background-color: #ffff99;
+        }
+        
+        .blue-home {
+            background-color: #9999ff;
+        }
+        
+        /* Marble pieces */
+        .marble {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #333;
+        }
+        
+        .red {
+            background-color: #f00;
+        }
+        
+        .green {
+            background-color: #0f0;
+        }
+        
+        .yellow {
+            background-color: #ff0;
+        }
+        
+        .blue {
+            background-color: #00f;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .player-turn {
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .hand {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .card {
+            width: 60px;
+            height: 90px;
+            background-color: white;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card.selected {
+            border: 2px solid #333;
+            transform: translateY(-10px);
+        }
+        
+        .suit {
+            position: absolute;
+            font-size: 12px;
+        }
+        
+        .top-left {
+            top: 5px;
+            left: 5px;
+        }
+        
+        .bottom-right {
+            bottom: 5px;
+            right: 5px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .rules-section {
+            margin-top: 30px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+        }
+        
+        .rules-section h2 {
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Marble Game</h1>
+    
+    <div class="game-container">
+        <div class="controls">
+            <div class="player-info">
+                <div class="player-turn" id="player-turn" style="background-color: #f00;">Red's Turn</div>
+                <button id="end-turn" disabled>End Turn</button>
+            </div>
+            
+            <div class="hand" id="hand">
+                <!-- Cards will be generated here -->
+            </div>
+            
+            <div class="message" id="message"></div>
+        </div>
+        
+        <div class="board" id="board">
+            <!-- Board will be generated here -->
+        </div>
+    </div>
+    
+    <div class="rules-section">
+        <h2>Game Rules</h2>
+        <p>This game is similar to Ludo with card-based movement:</p>
+        <ul>
+            <li>Get all 4 of your marbles into your goal zone</li>
+            <li>Use an Ace card to move a marble out of your base</li>
+            <li>The number 4 card can ONLY be used to move backwards 4 spaces</li>
+            <li>The number 7 card can be split between multiple marbles</li>
+            <li>The number 7 card allows capturing any piece in the path</li>
+            <li>Jacks (11) can be used either as 11 moves or to swap any two marbles</li>
+            <li>You cannot capture pieces on starting squares</li>
+            <li>One card per turn, draw new cards when everyone is out of cards</li>
+        </ul>
+    </div>
+    
+    <script>
+        const socket = io();
+
+        // When a player joins the game
+        function joinGame() {
+        const gameId = document.getElementById('game-id').value;
+        const playerName = document.getElementById('player-name').value;
+        socket.emit('join_game', { game_id: gameId, player_name: playerName });
+        }
+
+        // When the server sends a game update
+        socket.on('game_update', function(gameState) {
+        // Update the UI based on the new game state
+        updateBoard(gameState);
+        });
+        
+        // Game state
+        const players = ['red', 'green', 'yellow', 'blue'];
+        let currentPlayerIndex = 0;
+        let selectedCard = null;
+        let selectedMarble = null;
+        let movesRemaining = 0;
+        let splitMoves = false;
+        let swapMode = false;
+        let swapFirstMarble = null;
+        
+        // Create a deck of cards
+        function createDeck() {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            let deck = [];
+            
+            for (const suit of suits) {
+                for (const value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            
+            // Shuffle the deck
+            return shuffle(deck);
+        }
+        
+        // Fisher-Yates shuffle algorithm
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            
+            return array;
+        }
+        
+        const deck = createDeck();
+        
+        // Player hands
+        const hands = {
+            red: [],
+            green: [],
+            yellow: [],
+            blue: []
+        };
+        
+        // Deal initial hands
+        function dealHands() {
+            for (const player of players) {
+                while (hands[player].length < 5 && deck.length > 0) {
+                    hands[player].push(deck.pop());
+                }
+            }
+        }
+        
+        // Marbles for each player (base and on board)
+        const marbles = {
+            red: [
+                {id: 'red-1', position: 'base', cell: 0},
+                {id: 'red-2', position: 'base', cell: 1},
+                {id: 'red-3', position: 'base', cell: 2},
+                {id: 'red-4', position: 'base', cell: 3}
+            ],
+            green: [
+                {id: 'green-1', position: 'base', cell: 0},
+                {id: 'green-2', position: 'base', cell: 1},
+                {id: 'green-3', position: 'base', cell: 2},
+                {id: 'green-4', position: 'base', cell: 3}
+            ],
+            yellow: [
+                {id: 'yellow-1', position: 'base', cell: 0},
+                {id: 'yellow-2', position: 'base', cell: 1},
+                {id: 'yellow-3', position: 'base', cell: 2},
+                {id: 'yellow-4', position: 'base', cell: 3}
+            ],
+            blue: [
+                {id: 'blue-1', position: 'base', cell: 0},
+                {id: 'blue-2', position: 'base', cell: 1},
+                {id: 'blue-3', position: 'base', cell: 2},
+                {id: 'blue-4', position: 'base', cell: 3}
+            ]
+        };
+        
+        // Path positions for each player
+        const pathStartPositions = {
+            red: 0,
+            green: 13,
+            yellow: 26,
+            blue: 39
+        };
+        
+        // Generate the game board
+        function generateBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            // Create board cells (11x11 grid)
+            for (let row = 0; row < 11; row++) {
+                for (let col = 0; col < 11; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    
+                    // Set cell types based on position
+                    if (row < 4 && col < 4) {
+                        cell.classList.add('red-base');
+                        cell.dataset.type = 'red-base';
+                        cell.dataset.baseIndex = (row * 2) + (col % 2);
+                    } else if (row < 4 && col > 6) {
+                        cell.classList.add('green-base');
+                        cell.dataset.type = 'green-base';
+                        cell.dataset.baseIndex = (row * 2) + (col % 2);
+                    } else if (row > 6 && col > 6) {
+                        cell.classList.add('yellow-base');
+                        cell.dataset.type = 'yellow-base';
+                        cell.dataset.baseIndex = ((row-7) * 2) + ((col-7) % 2);
+                    } else if (row > 6 && col < 4) {
+                        cell.classList.add('blue-base');
+                        cell.dataset.type = 'blue-base';
+                        cell.dataset.baseIndex = ((row-7) * 2) + (col % 2);
+                    } else if (row === 5 && col === 5) {
+                        cell.classList.add('center');
+                        cell.textContent = '✦';
+                    } else if (
+                        // Red home path
+                        (col === 5 && row > 0 && row < 5) ||
+                        // Green home path
+                        (row === 5 && col > 6 && col < 10) ||
+                        // Yellow home path
+                        (col === 5 && row > 6 && row < 10) ||
+                        // Blue home path
+                        (row === 5 && col > 0 && col < 5)
+                    ) {
+                        if (col === 5 && row < 5) {
+                            cell.classList.add('red-home');
+                            cell.dataset.type = 'red-home';
+                            cell.dataset.homeIndex = 5 - row - 1;
+                        } else if (row === 5 && col > 6) {
+                            cell.classList.add('green-home');
+                            cell.dataset.type = 'green-home';
+                            cell.dataset.homeIndex = 10 - col - 1;
+                        } else if (col === 5 && row > 6) {
+                            cell.classList.add('yellow-home');
+                            cell.dataset.type = 'yellow-home';
+                            cell.dataset.homeIndex = row - 7;
+                        } else if (row === 5 && col < 5) {
+                            cell.classList.add('blue-home');
+                            cell.dataset.type = 'blue-home';
+                            cell.dataset.homeIndex = col;
+                        }
+                    } else if (
+                        // Main path
+                        (row === 4 && col < 5) || // Top left horizontal
+                        (col === 4 && row < 4) || // Top left vertical
+                        (row === 0 && col === 5) || // Top center
+                        (row === 1 && col === 5) || // Top center -1
+                        (col === 6 && row < 4) || // Top right vertical
+                        (row === 4 && col > 5) || // Top right horizontal
+                        (col === 10 && row === 5) || // Right center
+                        (col === 9 && row === 5) || // Right center -1
+                        (row === 6 && col > 5) || // Bottom right horizontal
+                        (col === 6 && row > 6) || // Bottom right vertical
+                        (row === 10 && col === 5) || // Bottom center
+                        (row === 9 && col === 5) || // Bottom center -1
+                        (col === 4 && row > 6) || // Bottom left vertical
+                        (row === 6 && col < 5) || // Bottom left horizontal
+                        (col === 0 && row === 5) || // Left center
+                        (col === 1 && row === 5) // Left center -1
+                    ) {
+                        cell.classList.add('path');
+                        
+                        // Calculate path index
+                        let pathIndex = -1;
+                        
+                        // Red start position
+                        if (row === 4 && col === 0) {
+                            cell.classList.add('red-start');
+                            cell.textContent = 'R';
+                            pathIndex = 0;
+                        }
+                        // Green start position
+                        else if (row === 0 && col === 6) {
+                            cell.classList.add('green-start');
+                            cell.textContent = 'G';
+                            pathIndex = 13;
+                        }
+                        // Yellow start position
+                        else if (row === 6 && col === 10) {
+                            cell.classList.add('yellow-start');
+                            cell.textContent = 'Y';
+                            pathIndex = 26;
+                        }
+                        // Blue start position
+                        else if (row === 10 && col === 4) {
+                            cell.classList.add('blue-start');
+                            cell.textContent = 'B';
+                            pathIndex = 39;
+                        }
+                        
+                        // Top edge (left to right)
+                        else if (row === 0 && col === 5) pathIndex = 11;
+                        else if (row === 1 && col === 5) pathIndex = 12;
+                        else if (col === 4 && row < 4) pathIndex = 3 - row;
+                        else if (row === 4 && col < 4) pathIndex = col + 4;
+                        else if (row === 4 && col > 5) pathIndex = col + 5;
+                        else if (col === 6 && row < 4) pathIndex = 15 + (3-row);
+                        
+                        // Right edge (top to bottom)
+                        else if (col === 10 && row === 5) pathIndex = 24;
+                        else if (col === 9 && row === 5) pathIndex = 25;
+                        else if (row === 6 && col > 6) pathIndex = 34 - col;
+                        else if (col === 6 && row > 6) pathIndex = row + 19;
+                        
+                        // Bottom edge (right to left)
+                        else if (row === 10 && col === 5) pathIndex = 37;
+                        else if (row === 9 && col === 5) pathIndex = 38;
+                        else if (col === 4 && row > 6) pathIndex = row + 32;
+                        else if (row === 6 && col < 4) pathIndex = 47 - col;
+                        
+                        // Left edge (bottom to top)
+                        else if (col === 0 && row === 5) pathIndex = 50;
+                        else if (col === 1 && row === 5) pathIndex = 51;
+                        else if (row < 5 && row > 1 && col === 5) pathIndex = -1; // Red home path
+                        else if (col < 5 && col > 1 && row === 5) pathIndex = -1; // Blue home path
+                        else if (row > 5 && row < 9 && col === 5) pathIndex = -1; // Yellow home path
+                        else if (col > 5 && col < 9 && row === 5) pathIndex = -1; // Green home path
+                        
+                        if (pathIndex !== -1) {
+                            cell.dataset.pathIndex = pathIndex;
+                        }
+                    }
+                    
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handleCellClick);
+                    
+                    board.appendChild(cell);
+                }
+            }
+            
+            // Place marbles on the board
+            updateMarblePositions();
+        }
+        
+        function updateMarblePositions() {
+            // Clear all marbles from the board
+            const existingMarbles = document.querySelectorAll('.marble');
+            existingMarbles.forEach(marble => marble.remove());
+            
+            // Place marbles in their current positions
+            for (const color in marbles) {
+                marbles[color].forEach(marble => {
+                    const marbleElement = document.createElement('div');
+                    marbleElement.classList.add('marble', color);
+                    marbleElement.id = marble.id;
+                    marbleElement.dataset.color = color;
+                    marbleElement.addEventListener('click', handleMarbleClick);
+                    
+                    if (marble.position === 'base') {
+                        // Place in base
+                        const baseCell = document.querySelector(`[data-type="${color}-base"][data-base-index="${marble.cell}"]`);
+                        if (baseCell) {
+                            baseCell.appendChild(marbleElement);
+                        }
+                    } else if (marble.position === 'home') {
+                        // Place in home
+                        const homeCell = document.querySelector(`[data-type="${color}-home"][data-home-index="${marble.cell}"]`);
+                        if (homeCell) {
+                            homeCell.appendChild(marbleElement);
+                        }
+                    } else if (marble.position === 'path') {
+                        // Place on path
+                        const pathCell = document.querySelector(`[data-path-index="${marble.cell}"]`);
+                        if (pathCell) {
+                            pathCell.appendChild(marbleElement);
+                        }
+                    }
+                });
+            }
+        }
+        
+        function updatePlayerTurn() {
+            const playerTurnDiv = document.getElementById('player-turn');
+            const currentPlayer = players[currentPlayerIndex];
+            playerTurnDiv.textContent = `${capitalizeFirstLetter(currentPlayer)}'s Turn`;
+            playerTurnDiv.style.backgroundColor = currentPlayer;
+            
+            // Update hand display
+            updateHandDisplay();
+            
+            // Check if current player has any valid moves
+            checkForValidMoves();
+        }
+        
+        function updateHandDisplay() {
+            const handDiv = document.getElementById('hand');
+            handDiv.innerHTML = '';
+            
+            const currentPlayer = players[currentPlayerIndex];
+            hands[currentPlayer].forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.index = index;
+                
+                // Set card color based on suit
+                let color = 'black';
+                if (card.suit === '♥' || card.suit === '♦') {
+                    color = 'red';
+                }
+                
+                cardElement.style.color = color;
+                
+                // Add value and suit
+                cardElement.innerHTML = `
+                    <span class="suit top-left">${card.suit}</span>
+                    <span>${card.value}</span>
+                    <span class="suit bottom-right">${card.suit}</span>
+                `;
+                
+                cardElement.addEventListener('click', handleCardClick);
+                handDiv.appendChild(cardElement);
+            });
+        }
+        
+        function handleCardClick(event) {
+            const cardIndex = parseInt(event.currentTarget.dataset.index);
+            const currentPlayer = players[currentPlayerIndex];
+            const card = hands[currentPlayer][cardIndex];
+            
+            // Remove selected class from all cards
+            document.querySelectorAll('.card').forEach(card => card.classList.remove('selected'));
+            
+            // Select this card
+            event.currentTarget.classList.add('selected');
+            selectedCard = cardIndex;
+            
+            // Reset selection state
+            selectedMarble = null;
+            movesRemaining = getCardValue(card);
+            splitMoves = (card.value === '7');
+            swapMode = (card.value === 'J' && confirm('Use Jack to swap two marbles? (Cancel to use as 11 moves)'));
+            
+            if (swapMode) {
+                swapFirstMarble = null;
+                setMessage('Select first marble to swap');
+            } else {
+                setMessage(`Selected ${card.value} - Choose a marble to move`);
+            }
+            
+            // Enable end turn button
+            document.getElementById('end-turn').disabled = false;
+        }
+        
+        function handleMarbleClick(event) {
+            const marbleElement = event.currentTarget;
+            const marbleColor = marbleElement.dataset.color;
+            const marbleId = marbleElement.id;
+            const currentPlayer = players[currentPlayerIndex];
+            
+            // Check if it's the player's turn and their marble
+            if (marbleColor !== currentPlayer || selectedCard === null) {
+                return;
+            }
+            
+            const card = hands[currentPlayer][selectedCard];
+            const cardValue = card.value;
+            
+            // Handle swap mode (Jack)
+            if (swapMode) {
+                if (swapFirstMarble === null) {
+                    // Select first marble
+                    swapFirstMarble = marbleId;
+                    setMessage('Select second marble to swap with');
+                } else {
+                    // Select second marble and perform swap
+                    const secondMarbleId = marbleId;
+                    
+                    // Find the marble objects
+                    let firstMarble = null;
+                    let secondMarble = null;
+                    
+                    for (const color in marbles) {
+                        for (const marble of marbles[color]) {
+                            if (marble.id === swapFirstMarble) {
+                                firstMarble = marble;
+                            } else if (marble.id === secondMarbleId) {
+                                secondMarble = marble;
+                            }
+                        }
+                    }
+                    
+                    if (firstMarble && secondMarble) {
+                        // Swap positions
+                        const tempPosition = firstMarble.position;
+                        const tempCell = firstMarble.cell;
+                        
+                        firstMarble.position = secondMarble.position;
+                        firstMarble.cell = secondMarble.cell;
+                        
+                        secondMarble.position = tempPosition;
+                        secondMarble.cell = tempCell;
+                        
+                        // Update board
+                        updateMarblePositions();
+                        
+                        // End the turn
+                        endTurn();
+                    }
+                }
+                return;
+            }
+            
+            // Find the marble in our data
+            const marble = marbles[marbleColor].find(m => m.id === marbleId);
+            
+            // Handle Ace (move out of base)
+            if (cardValue === 'A' && marble.position === 'base') {
+                // Move to starting position
+                marble.position = 'path';
+                marble.cell = pathStartPositions[marbleColor];
+                updateMarblePositions();
+                
+                // Check for captures
+                checkForCaptures(marble);
+                
+                // End the turn
+                endTurn();
+                return;
+            }
+            
+            // Handle other moves
+            if (marble.position === 'path' || marble.position === 'home') {
+                // If this is a new selection or continuing split moves
+                if (selectedMarble !== marbleId || splitMoves) {
+                    if (!splitMoves || movesRemaining > 0) {
+                        selectedMarble = marbleId;
+                        
+                        // Handle specific card rules
+                        if (cardValue === '4') {
+                            // Move backward 4 spaces
+                            moveMarbleBackward(marble, 4);
+                            updateMarblePositions();
+                            
+                            // Check for captures
+                            checkForCaptures(marble);
+                            
+                            // End the turn
+                            endTurn();
+                        } else if (splitMoves) {
+                            // Ask how many spaces to move this marble
+                            let movesToUse = 1;
+                            if (movesRemaining > 1) {
+                                movesToUse = parseInt(prompt(`How many moves (1-${movesRemaining}) would you like to use on this marble?`, '1'));
+                                
+                                if (isNaN(movesToUse) || movesToUse < 1 || movesToUse > movesRemaining) {
+                                    return; // Invalid input
+                                }
+                            }
+                            
+                            // Move the marble forward
+                            moveMarbleForward(marble, movesToUse);
+                            updateMarblePositions();
+                            
+                            // Check for captures (special case for 7)
+                            if (cardValue === '7') {
+                                checkForCapturesInPath(marble, movesToUse);
+                            } else {
+                                checkForCaptures(marble);
+                            }
+                            
+                            // Update remaining moves
+                            movesRemaining -= movesToUse;
+                            
+                            if (movesRemaining === 0) {
+                                endTurn();
+                            } else {
+                                setMessage(`${movesRemaining} moves remaining - Select another marble or end turn`);
+                            }
+                        } else {
+                            // Regular move forward
+                            moveMarbleForward(marble, getCardValue(card));
+                            updateMarblePositions();
+                            
+                            // Check for captures
+                            checkForCaptures(marble);
+                            
+                            // End the turn
+                            endTurn();
+                        }
+                    }
+                }
+            } else if (cardValue === 'A' && marble.position === 'base') {
+                // This case is handled above
+            } else {
+                setMessage("Invalid move - can't move marble in base without an Ace");
+            }
+        }
+        
+        function handleCellClick(event) {
+            // This can be expanded for direct cell clicking if needed
+        }
+        
+        function moveMarbleForward(marble, spaces) {
+            if (marble.position === 'path') {
+                const playerColor = marble.id.split('-')[0];
+                const pathLength = 52;
+                const homeEntryPoint = (pathStartPositions[playerColor] + pathLength - 5) % pathLength;
+                
+                let newPosition = (marble.cell + spaces) % pathLength;
+                
+                // Check if marble can enter home
+                if (marble.cell <= homeEntryPoint && newPosition > homeEntryPoint) {
+                    const spacesAfterEntry = newPosition - homeEntryPoint;
+                    // If marble can enter home exactly or with remaining spaces
+                    if (spacesAfterEntry <= 4) {
+                        marble.position = 'home';
+                        marble.cell = spacesAfterEntry - 1;
+                        setMessage(`${playerColor} marble entered home!`);
+                        checkForWin(playerColor);
